@@ -1,0 +1,18 @@
+[GIN-debug] [WARNING] Creating an Engine instance with the Logger and Recovery middleware already attached.
+
+[GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+[GIN-debug] GET    /api/v1/contacts          --> github.com/messenger/backend/internal/api/handlers.(*ContactsHandler).ListContacts-fm (4 handlers)
+[GIN-debug] DELETE /api/v1/contacts/:contact_id --> github.com/messenger/backend/internal/api/handlers.(*ContactsHandler).DeleteContact-fm (4 handlers)
+[GIN-debug] POST   /api/v1/contacts/requests --> github.com/messenger/backend/internal/api/handlers.(*ContactsHandler).CreateContactRequest-fm (4 handlers)
+[GIN-debug] POST   /api/v1/contacts/requests/:id/accept --> github.com/messenger/backend/internal/api/handlers.(*ContactsHandler).AcceptContactRequest-fm (4 handlers)
+[GIN-debug] POST   /api/v1/contacts/requests/:id/reject --> github.com/messenger/backend/internal/api/handlers.(*ContactsHandler).RejectContactRequest-fm (4 handlers)
+[GIN-debug] POST   /api/v1/contacts/actions/block/:peer_id --> github.com/messenger/backend/internal/api/handlers.(*ContactsHandler).BlockPeer-fm (4 handlers)
+[GIN-debug] DELETE /api/v1/contacts/actions/unblock/:peer_id --> github.com/messenger/backend/internal/api/handlers.(*ContactsHandler).UnblockPeer-fm (4 handlers)
+2025/08/20 07:16:06 Starting server on :8080
+[GIN-debug] [WARNING] You trusted all proxies, this is NOT safe. We recommend you to set a value.
+Please check https://pkg.go.dev/github.com/gin-gonic/gin#readme-don-t-trust-all-proxies for details.
+[GIN-debug] Listening and serving HTTP on :8080
+[GIN] 2025/08/20 - 07:16:07 | 201 |      187.89µs |       127.0.0.1 | POST     "/api/v1/contacts/requests"
