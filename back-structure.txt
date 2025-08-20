@@ -1,0 +1,60 @@
+// Структура проекта
+/*
+messenger-backend/
+├── cmd/
+│   └── server/
+│       └── main.go
+├── internal/
+│   ├── api/
+│   │   ├── handlers/
+│   │   │   ├── auth.go
+│   │   │   ├── contacts.go
+│   │   │   ├── chats.go
+│   │   │   ├── messages.go
+│   │   │   ├── calls.go
+│   │   │   └── keys.go
+│   │   ├── middleware/
+│   │   │   ├── auth.go
+│   │   │   ├── cors.go
+│   │   │   ├── idempotency.go
+│   │   │   ├── ratelimit.go
+│   │   │   └── trace.go
+│   │   └── ws/
+│   │       └── hub.go
+│   ├── config/
+│   │   └── config.go
+│   ├── crypto/
+│   │   ├── e2ee/
+│   │   │   ├── x3dh.go
+│   │   │   ├── doubleratchet.go
+│   │   │   ├── mls.go
+│   │   │   └── senderkeys.go
+│   │   └── utils.go
+│   ├── db/
+│   │   ├── migrations/
+│   │   ├── queries/
+│   │   └── models.go
+│   ├── services/
+│   │   ├── auth/
+│   │   ├── contacts/
+│   │   ├── chats/
+│   │   ├── messages/
+│   │   ├── keys/
+│   │   ├── calls/
+│   │   └── notifications/
+│   └── utils/
+│       ├── errors.go
+│       ├── logger.go
+│       └── validator.go
+├── pkg/
+│   ├── webrtc/
+│   │   ├── signaling.go
+│   │   └── sfu.go
+│   └── storage/
+│       └── s3.go
+├── migrations/
+├── docker/
+├── go.mod
+├── go.sum
+└── README.md
+*/
