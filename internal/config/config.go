@@ -2,6 +2,7 @@
 package config
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/spf13/viper"
@@ -37,6 +38,11 @@ type DatabaseConfig struct {
 	MinConns    int32  `mapstructure:"min_conns"`
 	MaxConnAge  string `mapstructure:"max_conn_age"`
 	MaxIdleTime string `mapstructure:"max_idle_time"`
+}
+
+func (d DatabaseConfig) DSN() string {
+	return fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=%s",
+		d.Host, d.Port, d.User, d.Password, d.Database, d.SSLMode)
 }
 
 type RedisConfig struct {

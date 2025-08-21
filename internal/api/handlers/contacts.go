@@ -72,8 +72,18 @@ func getUserID(c *gin.Context) (ulid.ULID, bool) {
 	if !ok {
 		return ulid.ULID{}, false
 	}
-	userID, ok := userIDVal.(ulid.ULID)
-	return userID, ok
+
+	userIDStr, ok := userIDVal.(string)
+	if !ok {
+		return ulid.ULID{}, false
+	}
+
+	userID, err := ulid.Parse(userIDStr)
+	if err != nil {
+		return ulid.ULID{}, false
+	}
+
+	return userID, true
 }
 
 func (h *ContactsHandler) CreateContactRequest(c *gin.Context) {

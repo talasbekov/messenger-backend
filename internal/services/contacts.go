@@ -2,6 +2,8 @@ package services
 
 import (
 	"context"
+	"database/sql"
+	"fmt"
 
 	"github.com/messenger/backend/internal/db"
 	"github.com/messenger/backend/internal/repos"
@@ -20,23 +22,24 @@ func NewContactsService(repo repos.ContactRepository) *ContactsService {
 
 // CreateContactRequest initiates a new contact request.
 func (s *ContactsService) CreateContactRequest(ctx context.Context, fromUserID ulid.ULID, peerIdentifier string, message *string) (*db.ContactRequest, error) {
-	// Business rules from ТЗ:
-	// - Find user by username/phone/email
-	// - Can't add self
-	// - Check for blocks
-
-	peer, err := s.repo.FindUserByIdentifier(ctx, peerIdentifier)
+	nullIdentifier := sql.NullString{String: peerIdentifier, Valid: true}
+	peer, err := s.repo.FindUserByIdentifier(ctx, nullIdentifier, nullIdentifier, nullIdentifier)
 	if err != nil {
 		// Handle not found error specifically
-		return nil, err // e.g., ErrUserNotFound
+		return nil, &BusinessError{Code: "USER_NOT_FOUND", Message: "User not found"}
 	}
 
-	if fromUserID == peer.ID {
+	peerID, err := ulid.Parse(peer.ID)
+	if err != nil {
+		return nil, fmt.Errorf("internal: failed to parse peer ID: %w", err)
+	}
+
+	if fromUserID == peerID {
 		return nil, &BusinessError{Code: "SELF_CONTACT_FORBIDDEN", Message: "Cannot add yourself as a contact"}
 	}
 
 	// Check if peer has blocked requester
-	blocked, err := s.repo.IsBlocked(ctx, peer.ID, fromUserID)
+	blocked, err := s.repo.IsBlocked(ctx, peerID, fromUserID)
 	if err != nil {
 		return nil, err
 	}
@@ -44,9 +47,12 @@ func (s *ContactsService) CreateContactRequest(ctx context.Context, fromUserID u
 		return nil, &BusinessError{Code: "YOU_ARE_BLOCKED", Message: "This user has blocked you"}
 	}
 
-	// TODO: Check for existing pending request to prevent duplicates (409 CONTACT_REQUEST_EXISTS)
+	var nullMessage sql.NullString
+	if message != nil {
+		nullMessage = sql.NullString{String: *message, Valid: true}
+	}
 
-	return s.repo.CreateContactRequest(ctx, fromUserID, peer.ID, message)
+	return s.repo.CreateContactRequest(ctx, fromUserID, peerID, nullMessage)
 }
 
 // AcceptContactRequest accepts a pending contact request.
@@ -56,26 +62,36 @@ func (s *ContactsService) AcceptContactRequest(ctx context.Context, userID, requ
 		return err
 	}
 
+	toUserID, err := ulid.Parse(req.ToUserID)
+	if err != nil {
+		return fmt.Errorf("internal: failed to parse to_user_id: %w", err)
+	}
+
 	// Ensure the user accepting is the recipient of the request
-	if req.ToUser != userID {
+	if toUserID != userID {
 		return &BusinessError{Code: "FORBIDDEN", Message: "You are not authorized to accept this request"}
 	}
 
-	if req.State != db.ContactStatePending {
+	if req.State != db.ContactRequestStatePending {
 		return &BusinessError{Code: "REQUEST_NOT_PENDING", Message: "Request is not in a pending state"}
 	}
 
+	fromUserID, err := ulid.Parse(req.FromUserID)
+	if err != nil {
+		return fmt.Errorf("internal: failed to parse from_user_id: %w", err)
+	}
+
 	// Create reciprocal contact entries
-	if _, err := s.repo.CreateContact(ctx, req.FromUser, req.ToUser); err != nil {
+	if _, err := s.repo.CreateContact(ctx, fromUserID, toUserID); err != nil {
 		return err
 	}
-	if _, err := s.repo.CreateContact(ctx, req.ToUser, req.FromUser); err != nil {
+	if _, err := s.repo.CreateContact(ctx, toUserID, fromUserID); err != nil {
 		// Attempt to roll back the first creation
-		_ = s.repo.DeleteContact(ctx, req.FromUser, req.ToUser)
+		_ = s.repo.DeleteContact(ctx, fromUserID, toUserID)
 		return err
 	}
 
-	return s.repo.UpdateContactRequestState(ctx, requestID, db.ContactStateAccepted)
+	return s.repo.UpdateContactRequestState(ctx, requestID, db.ContactRequestStateAccepted)
 }
 
 // RejectContactRequest rejects a pending contact request.
@@ -84,17 +100,21 @@ func (s *ContactsService) RejectContactRequest(ctx context.Context, userID, requ
 	if err != nil {
 		return err
 	}
+
+	toUserID, err := ulid.Parse(req.ToUserID)
+	if err != nil {
+		return fmt.Errorf("internal: failed to parse to_user_id: %w", err)
+	}
+
 	// Ensure the user rejecting is the recipient of the request
-	if req.ToUser != userID {
+	if toUserID != userID {
 		return &BusinessError{Code: "FORBIDDEN", Message: "You are not authorized to reject this request"}
 	}
-	if req.State != db.ContactStatePending {
+	if req.State != db.ContactRequestStatePending {
 		return &BusinessError{Code: "REQUEST_NOT_PENDING", Message: "Request is not in a pending state"}
 	}
 
-	// In a real app, we might want a "rejected" state, but for now we just delete/ignore.
-	// For simplicity, we'll just update the state.
-	return s.repo.UpdateContactRequestState(ctx, requestID, "rejected") // Assuming a 'rejected' state exists
+	return s.repo.UpdateContactRequestState(ctx, requestID, db.ContactRequestStateRejected)
 }
 
 // DeleteContact removes a contact from the user's list.
